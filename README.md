@@ -40,8 +40,11 @@ offlineSaveQueue.count()
 Links
 ================
 Demo Page - http://www.annuit.com/offlineSaveQueue/
+
 JSDoc - http://www.annuit.com/offlineSaveQueue/docs/
+
 Jasmine Unit Tests - http://www.annuit.com/offlineSaveQueue/unittest/
+
 Annuit - http://www.annuit.com/
 
 Credits
