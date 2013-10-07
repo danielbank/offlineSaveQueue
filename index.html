@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+
+<html>
+    <head>
+        <meta charset="utf-8"> 
+        <title>OfflineSaveQueue: An HTML5 Local Storage Solution for Saving and Processing JSON Objects.</title>
+    </head>
+		<h1>OfflineSaveQueue</h1>
+		<p id="offlineSaveQueueCount"></p>
+		<a href="#" id="saveObjectLink">Click me to save a Dummy Object!</a>
+		<hr/>
+		<h1>Links</h1>
+		<ul>
+			<li><a href="https://github.com/danielbank/offlineSaveQueue">GitHub</a></li>
+			<li><a href="./docs/index.html">JSDoc</a></li>
+			<li><a href="./unittest/index.html">Jasmine Unit Tests</a></li>
+		</ul>
+		<hr>
+		<h1>Usage</h1>
+		<p style="font-weight: bold">Instantiate an OfflineSaveQueue object:</p>
+		<p style="background: #D8D8D8 ; font-family: courier">var offlineSaveQueue = new OfflineSaveQueue();</p>
+		<p style="font-weight: bold">Set the callback function which is executed when the queue is processed:</p>
+		<p style="background: #D8D8D8 ; font-family: courier">offlineSaveQueue.setCallback(function(objectInstance, objectName){//Do stuff here...});</p>
+		<p style="font-weight: bold">Start periodic queue processing:</p>
+		<p style="background: #D8D8D8 ; font-family: courier">offlineSaveQueue.startQueueProcessing(60000);</p>
+		<p style="font-weight: bold">Stop periodic queue processing:</p>
+		<p style="background: #D8D8D8 ; font-family: courier">offlineSaveQueue.stopQueueProcessing();</p>
+		<p style="font-weight: bold">Save an item into the queue</p>
+		<p style="background: #D8D8D8 ; font-family: courier">offlineSaveQueue.saveObject({"foo": "bar"}, "DummyObject");</p>
+		<p style="font-weight: bold">Manually process the queue</p>
+		<p style="background: #D8D8D8 ; font-family: courier">offlineSaveQueue.processQueue();</p>
+		<p style="font-weight: bold">Get the number of items in the queue:</p>
+		<p style="background: #D8D8D8 ; font-family: courier">offlineSaveQueue.count()</p>
+		<hr/>
+		<p>Copyright Daniel Bank (daniel.p.bank@gmail.com), September 5th 2013, <a href="https://github.com/danielbank/offlineSaveQueue/blob/master/LICENSE">MIT license</a></p>
+		<script src="./js/jquery-2.0.3.min.js"></script>
+		<script src="./js/offlineSaveQueue.js"></script>
+		<script src="./js/parse-1.2.12.js"></script>
+		<script language="javascript" type="text/javascript">
+			/**************************************************************************************************************** 
+			 *                                             VERY IMPORTANT NOTE!                                             *
+			 * Be sure to provide your Parse Application Key and Parse JavaScript Key in the following two lines of code!   *
+			 ****************************************************************************************************************/
+			var ParseAppKey = "";
+			var ParseJSKey = "";
+			if(ParseAppKey === "" || ParseJSKey === ""){
+				alert("This example will not work unless you set the Parse Application Key and Parse JavaScript Key on lines 44 and 45!");
+			}
+		
+			// Initialize Parse
+			Parse.initialize(ParseAppKey, ParseJSKey);
+					
+			// Create a Dummy Parse Object
+			var DummyObject = Parse.Object.extend("DummyObject");
+
+			// Initialize the OfflineSaveQueue
+			var offlineSaveQueue = new OfflineSaveQueue();
+			
+			// Set the callback for the OfflineSaveQueue
+			offlineSaveQueue.setCallback(function(inputObjectInstance, inputObjectName){
+				// Create a class equal to the Global Variable matching the inputObjectName string
+				var parseClass = window[inputObjectName];
+				// Instantiate a new Object of the class
+				var parseObject = new parseClass();
+
+				// Save the inputObjectInstance to Parse
+				parseObject.save(inputObjectInstance, {
+					success: function(parseObject){
+						alert("A dummy object was saved to Parse!");
+						updateCountText();
+					},
+					error: function(parseObject, err){
+						// TODO: Check the error code and only add the object back for non-fatal errors!
+						// If there is an error, add the object back to the queue
+						alert("Failed to save a dummy object to Parse.");
+						offlineSaveQueue.saveObject(inputObjectInstance, inputObjectName);
+						updateCountText();
+					}
+				});
+			});
+			
+			// Process the OfflineSaveQueue every minute
+			offlineSaveQueue.startQueueProcessing(60000);
+			
+			// When the Save Object Link is clicked, put a Dummy Object on the OfflineSaveQueue
+			$("#saveObjectLink").click(function() {
+				offlineSaveQueue.saveObject({"foo": "bar"}, "DummyObject");
+				alert("A dummy object was added to the OfflineSaveQueue, it should be processed in a minute or less.");
+				updateCountText();
+			});
+			
+			// Report the number of items in the queue on the screen
+			var updateCountText = function(){
+				$("#offlineSaveQueueCount").html("There are " + offlineSaveQueue.count() + " items in the queue.");
+			}
+			updateCountText();
+		</script>	
+	</body>
+</html>

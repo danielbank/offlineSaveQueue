@@ -1,0 +1,207 @@
+/**
+* OfflineSaveQueue
+*	An HTML5 Local Storage Solution for Saving and Processing JSON Objects
+* {@link https://github.com/danielbank/offlineSaveQueue}
+* Written by Daniel Bank (daniel.p.bank@gmail.com) September 5th 2013
+* MIT license {@link https://github.com/danielbank/offlineSaveQueue/blob/master/LICENSE}
+* Please attribute the author if you use it.
+*
+* @fileoverview
+* @author Daniel Bank (daniel.p.bank@gmail.com)
+* @version 1.0
+*/
+
+function OfflineSaveQueue(){
+	
+	/**
+	* An interval variable for the queue processing interval
+	* 
+	* @type {interval}
+	* @author Daniel Bank (daniel.p.bank@gmail.com)
+	* @version 1.0
+	*/
+	var _queueProcessInterval;
+
+	/**
+	* An function variable called when the queue is processed.
+	* 
+	* @type {callback}
+	* @author Daniel Bank (daniel.p.bank@gmail.com)
+	* @version 1.0
+	*/
+	var _callback = function(inputObjectInstance, inputObjectName){};
+	
+	/**
+	* Returns the offlineSaveQueue from Local Storage as an array or returns an empty array if there is none
+	*
+	* @access private
+	* @author Daniel Bank (daniel.p.bank@gmail.com)
+	* @returns {array} the current array representation of the offlineSaveQueue
+	*/
+	var _getOfflineSaveQueue = function(){
+		// Placeholder variable that will be returned
+		var offlineSaveQueueArray;
+		
+		var offlineSaveQueue = window.localStorage.getItem("offlineSaveQueue");
+		if(offlineSaveQueue){
+			// If the offlineSaveQueue exists in Local Storage, parse it as an array
+			offlineSaveQueueArray = JSON.parse(offlineSaveQueue);
+		}
+		else{
+			// If the offlineSaveQueue does not exist, return an empty array
+			offlineSaveQueueArray = [];
+		}
+		return offlineSaveQueueArray;
+	}
+	
+	/**
+	* Sets the offlineSaveQueue in Local Storage or removes it if the offlineSaveQueueArray is empty
+	*
+	* @access private
+	* @author Daniel Bank (daniel.p.bank@gmail.com)
+	* @param {array} offlineSaveQueueArray - the new array representation of the offlineSaveQueue
+	*/
+	var _setOfflineSaveQueue = function(offlineSaveQueueArray){
+		if(offlineSaveQueueArray.length > 0){
+			// If the offlineSaveQueueArray is not empty, stringify it and store the value to offlineSaveQueue in Local Storage
+			window.localStorage["offlineSaveQueue"] = JSON.stringify(offlineSaveQueueArray);
+		}
+		else{
+			// If the offlineSaveQueueArray is empty, remove offlineSaveQueue from Local Storage
+			window.localStorage.removeItem("offlineSaveQueue");
+		}
+	}
+	
+	/**
+	* Adds an (inputObjectInstance, inputObjectName) pair into offlineSaveQueue in Local Storage
+	*
+	* @access private
+	* @author Daniel Bank (daniel.p.bank@gmail.com)
+	* @param {json} inputObjectInstance - the JSON object to add to the queue
+	* @param {string} inputObjectName - the name of the JSON object to add to the queue
+	*/
+	var _addToQueue = function(inputObjectInstance, inputObjectName){
+		if(inputObjectInstance && inputObjectName){
+			// If both inputs are truthy, get the offlineSaveQueueArray, push the data on it, and put it back into Local Storage
+			var offlineSaveQueueArray = _getOfflineSaveQueue();
+			offlineSaveQueueArray.push({objectInstance: inputObjectInstance, objectName: inputObjectName});
+			_setOfflineSaveQueue(offlineSaveQueueArray);
+		}		
+	}
+	
+	/**
+	* Removes the (obj, objectName) pair at the specified index from the offlineSaveQueue in Local Storage
+	*
+	* @access private
+	* @author Daniel Bank (daniel.p.bank@gmail.com)
+	* @param {number} index - index of the the JSON object to remove from the offlineSaveQueue
+	*/
+	var _removeFromQueue = function(index){
+		// Get the offlineSaveQueueArray from Local Storage
+		var offlineSaveQueueArray = _getOfflineSaveQueue();
+		if(index > 0 || index < offlineSaveQueueArray.length){
+			// If the index is within bounds, remove that element from the array and update the offlineSaveQueue in Local Storage
+			offlineSaveQueueArray.splice(index,1);
+			_setOfflineSaveQueue(offlineSaveQueueArray);
+		}
+	}	
+
+	/**
+	* Gets the number of items in the OfflineSaveQueue
+	*
+	* @access public
+	* @author Daniel Bank (daniel.p.bank@gmail.com)
+	* @returns {number} the number of items currently in the OfflineSaveQueue
+	*/
+	this.count = function(inputCallback){			
+		// Get the offlineSaveQueueArray from Local Storage
+		var offlineSaveQueueArray = _getOfflineSaveQueue();
+		// Return the number of items in the queue
+		return offlineSaveQueueArray.length;
+	}
+	
+	/**
+	* Sets the OfflineSaveQueue's _callback function
+	*
+	* @access public
+	* @author Daniel Bank (daniel.p.bank@gmail.com)
+	* @param {function} inputCallback - the function to be called when the queue is processed
+	*/
+	this.setCallback = function(inputCallback){			
+		// Set the OfflineSaveQueue's _callback function
+		_callback = inputCallback || function(inputObjectInstance, inputObjectName){};
+	}
+	
+	/**
+	* Calls _addToQueue() to save an (inputObjectInstance, inputObjectName) pair into the offlineSaveQueue in Local Storage
+	*
+	* @access public
+	* @author Daniel Bank (daniel.p.bank@gmail.com)
+	* @param {json} inputObjectInstance - the JSON object to add to the queue
+	* @param {string} inputObjectName - the name of the JSON object to add to the queue
+	*/
+	this.saveObject = function(inputObjectInstance, inputObjectName){			
+		return (_addToQueue(inputObjectInstance, inputObjectName));
+	}
+	
+	/**
+	* Calls the OfflineSaveQueue's _callback function
+	*
+	* @access public
+	* @author Daniel Bank (daniel.p.bank@gmail.com)
+	* @param {json} inputObjectInstance - the input object instance to the callback
+	* @param {string} inputObjectName - the input object name to the callback
+	*/
+	this.invokeCallBack = function(inputObjectInstance, inputObjectName){
+		// Call the _callback function.
+		_callback(inputObjectInstance, inputObjectName);
+	}
+	
+	/**
+	* Tries to saves all data in the offlineSaveQueue in Local Storage to Parse
+	*
+	* @access public
+	* @author Daniel Bank (daniel.p.bank@gmail.com)
+	*/
+	this.processQueue = function(){
+		// Get the offlineSaveQueueArray from Local Storage
+		var offlineSaveQueueArray = _getOfflineSaveQueue();
+		for(var i = offlineSaveQueueArray.length - 1; i >= 0; i-=1){
+			// Loop over the array, try to save it to Parse, and remove it from the queue
+			// Note: iterate over the array from the end to the beginning so that removing indices doesn't screw up the iteration
+			var inputObjectInstance = offlineSaveQueueArray[i].objectInstance;
+			var inputObjectName = offlineSaveQueueArray[i].objectName;
+			_removeFromQueue(i);
+			this.invokeCallBack(inputObjectInstance, inputObjectName);
+		}
+	}
+	
+	/**
+	* Stars a timer to process the offlineSaveQueue in Local Storage on a regular interval
+	*
+	* @access public
+	* @author Daniel Bank (daniel.p.bank@gmail.com)
+	* @param {number} timeInterval - number of ms to between each queue-processing event
+	*/
+	this.startQueueProcessing = function(timeInterval){
+		// Keep a reference to this context for calling the processQueue method in the interval
+		var that = this;
+		
+		// Set the interval variable to call processQueue every 60 seconds
+		_queueProcessInterval = setInterval(function(){
+			that.processQueue();
+		},timeInterval);
+	}
+
+	/**
+	* Clears the interval which processes the queue
+	*
+	* @access public
+	* @author Daniel Bank (daniel.p.bank@gmail.com)
+	*/
+	this.stopQueueProcessing = function(){
+		clearInterval(_queueProcessInterval);
+	}
+}
+
+// TODO: Handle bad parameters in all functions.
